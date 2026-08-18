@@ -144,15 +144,26 @@
 
 ```
 uptime-monitor/
-├── main.go                    # 入口: 配置加载、驱动创建、定时循环
+├── main.go                    # 入口: 配置加载、驱动创建、定时循环、-v 版本号
 ├── go.mod
 ├── config.yaml.example        # 配置示例
+├── README.md                  # 项目简介(英文, 开源主页)
+├── LICENSE                    # MIT 开源协议
+├── CHANGELOG.md               # 变更记录
+├── SECURITY.md                # 安全策略
+├── CONTRIBUTING.md            # 贡献指南
+├── .gitignore
+├── .github/
+│   └── workflows/
+│       ├── ci.yml             # 提交/PR 自动 vet+test+build
+│       └── release.yml        # v* tag 自动构建并发布 GitHub Release
 ├── internal/
 │   ├── config/config.go       # 配置加载/校验/环境变量覆盖
 │   ├── db/
 │   │   ├── driver.go          # DBDriver 接口
 │   │   ├── oracle_sqlplus.go  # sqlplus 驱动
 │   │   ├── oracle_godror.go   # godror 驱动
+│   │   ├── oracle_godror_stub.go # 非 CGO 编译时的 stub
 │   │   └── util.go            # 输出解析工具
 │   ├── notifier/push.go       # Push 上报
 │   └── logger/logger.go       # 日志
@@ -173,9 +184,11 @@ uptime-monitor/
 | V1 | 项目骨架、配置管理、sqlplus 驱动、Push 上报、定时循环、日志、优雅停机、打包脚本 | ✅ 完成 |
 | V2 | DBDriver 接口抽象、godror 原生驱动、多数据库扩展 | ✅ 完成 |
 | V3 | 重试机制、日志轮转、跨平台构建、单元测试 | ✅ 完成 |
+| V4 | 开源发布：README/LICENSE/CHANGELOG、CI 与 Release 工作流、`-v` 版本号、多架构产物、SQL 超时 | ✅ 完成 |
 
 ### 后续可选迭代
 
-- V4：配置文件热加载（fsnotify）
-- V5：指标采集（Prometheus 格式暴露）
-- V6：多实例/多数据库并发监控
+- V5：配置文件热加载（fsnotify）
+- V6：指标采集（Prometheus 格式暴露）
+- V7：多实例/多数据库并发监控
+- V8：告警直推（程序内嵌 SMTP / 企业微信 Webhook，绕开 Uptime Kuma 通知权限）

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uptime Kuma 监控平台 — 数据库与应用服务器监控方案</title>
+<style>
+  :root {
+    --primary: #1a73e8;
+    --primary-dark: #1557b0;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --code-bg: #0f172a;
+    --code-text: #e2e8f0;
+    --accent: #059669;
+    --warn: #d97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding-bottom: 60px;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    color: #fff;
+    padding: 48px 24px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2rem; margin-bottom: 8px; }
+  .hero p { opacity: .92; font-size: 1.05rem; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-top: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  h2 {
+    font-size: 1.4rem;
+    color: var(--primary-dark);
+    border-left: 5px solid var(--primary);
+    padding-left: 12px;
+    margin-bottom: 16px;
+  }
+  h3 { font-size: 1.1rem; color: #111827; margin: 18px 0 10px; }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: .95rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 9px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #eef3fb; color: var(--primary-dark); font-weight: 600; }
+  tr:nth-child(even) td { background: #fafbfd; }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 16px 18px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: .9rem;
+    margin: 12px 0;
+  }
+  code {
+    background: #eef1f5;
+    color: #be185d;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: .9em;
+    font-family: Consolas, "Courier New", monospace;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-left: 4px solid var(--accent);
+    background: #ecfdf5;
+    padding: 10px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 12px 0;
+    color: #065f46;
+  }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  .entry {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .entry .item {
+    background: #f0f6ff;
+    border: 1px solid #cfe0fa;
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .entry .item b { display: block; color: var(--primary-dark); margin-bottom: 4px; }
+  .entry .item span { font-size: .92rem; }
+  img {
+    max-width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 8px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
+  }
+  .toc {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin: 12px 0;
+  }
+  .toc ol { margin: 4px 0; }
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: .85rem;
+    margin-top: 36px;
+  }
+  .mermaid { background: #fff; border-radius: 8px; padding: 8px; }
+  @media (max-width: 640px) {
+    .entry { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 1.5rem; }
+    .card { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>📡 Uptime Kuma 监控平台</h1>
+  <p>数据库与应用服务器监控方案 — 数据库探针 + 应用监控 + 告警通知（SMTP 邮件 / 企业微信）</p>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h2>📌 快速入口</h2>
+    <div class="entry">
+      <div class="item"><b>🌐 监控面板</b><span>http://127.0.0.1:7001/</span></div>
+      <div class="item"><b>🐙 探针开源仓库</b><span>https://github.com/pslinux/uptime-monitor.git</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 目录</h2>
+    <div class="toc">
+      <ol>
+        <li>技术架构</li>
+        <li>Uptime Kuma 安装部署</li>
+        <li>组件与职责</li>
+        <li>监控配置</li>
+        <li>告警通知</li>
+        <li>验证与截图</li>
+        <li>附录：常见问题 FAQ</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>一、技术架构</h2>
+    <h3>1.1 架构总览</h3>
+    <pre class="mermaid">
+flowchart TB
+    subgraph 用户侧
+        U["🖥️ 浏览器 / 运维人员"]
+    end
+    subgraph Kuma["Uptime Kuma 监控中心<br/>(Docker, 端口 7001 → 3001)"]
+        Web["Web 管理界面"]
+        KDB[("SQLite 存储<br/>/app/data/kuma.db")]
+        Engine["监控调度引擎<br/>(HTTP / TCP / Ping / Push)"]
+        Notify["通知引擎"]
+    end
+    subgraph 监控目标
+        Oracle[("Oracle 数据库<br/>SQL*Net 1521")]
+        App["应用服务器<br/>HTTP / 业务端口"]
+        Svc["其他服务<br/>(URL / 端口 / Ping)"]
+    end
+    subgraph 探针
+        UM["uptime-monitor<br/>Go 数据库探针<br/>(SELECT 1 FROM DUAL)"]
+    end
+    subgraph 通知渠道
+        Mail["📧 SMTP 邮箱<br/>(企业微信邮箱)"]
+        WeCom["💬 企业微信<br/>群机器人 Webhook"]
+    end
+    U -->|"HTTPS 访问 :7001"| Web
+    Web --> KDB
+    Engine -->|"HTTP(s) / TCP / Ping 监控"| App
+    Engine -->|"HTTP(s) / TCP / Ping 监控"| Svc
+    Engine <-->|"Push 上报 API (up/down/ping)"| UM
+    UM -->|"周期执行健康检查 SQL"| Oracle
+    Engine -->|"告警触发"| Notify
+    Notify --> Mail
+    Notify --> WeCom
+    </pre>
+
+    <h3>1.2 链路说明</h3>
+    <ul>
+      <li><b>🔗 数据库监控</b>：<code>uptime-monitor</code> 探针周期性连接 Oracle 执行 <code>SELECT 1 FROM DUAL</code>，结果通过 Uptime Kuma <b>Push API</b> 上报（<code>status=up|down</code> + 延迟），由 Kuma 负责展示与告警。Oracle 本身不支持 HTTP 探活，故由 Go 探针桥接。</li>
+      <li><b>🌍 应用监控</b>：直接由 Kuma 的 HTTP(s) / TCP / Ping 类型探测 URL、端口、主机存活，无需额外探针。</li>
+      <li><b>🔔 通知</b>：监控状态变化（down / up）时由 Kuma 通知引擎通过 SMTP 邮箱或企业微信机器人推送。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>二、Uptime Kuma 安装部署</h2>
+    <blockquote>环境：Docker（或 Node.js ≥ 14），当前部署于 <code>127.0.0.1:7001</code>。</blockquote>
+
+    <h3>2.1 Docker 一键部署（推荐）</h3>
+    <pre><code># 端口映射 7001(宿主机):3001(容器), 数据持久化到宿主机 /opt/uptime-kuma/data
+docker run -d --name uptime-kuma --restart=always \
+  -p 7001:3001 \
+  -v /opt/uptime-kuma/data:/app/data \
+  louislam/uptime-kuma:1
+
+# 确认运行状态
+docker ps | grep uptime-kuma</code></pre>
+
+    <h3>2.2 首次初始化</h3>
+    <ol>
+      <li>浏览器访问 <code>http://127.0.0.1:7001/</code></li>
+      <li>创建管理员账号（<b>第一个账号即管理员</b>，负责配置监控与通知）</li>
+      <li>数据自动保存于 SQLite：<code>/opt/uptime-kuma/data/kuma.db</code></li>
+    </ol>
+
+    <h3>2.3 常用运维命令</h3>
+    <table>
+      <tr><th>操作</th><th>命令</th></tr>
+      <tr><td>查看日志</td><td><code>docker logs -f uptime-kuma</code></td></tr>
+      <tr><td>重启</td><td><code>docker restart uptime-kuma</code></td></tr>
+      <tr><td>停止</td><td><code>docker stop uptime-kuma</code></td></tr>
+      <tr><td>升级</td><td><code>docker pull louislam/uptime-kuma:1</code> 后按 2.4 流程重建</td></tr>
+      <tr><td>备份</td><td>直接拷贝 <code>/opt/uptime-kuma/data/</code> 目录（含 kuma.db）</td></tr>
+      <tr><td>卸载</td><td><code>docker rm -f uptime-kuma</code></td></tr>
+    </table>
+
+    <h3>2.4 平滑升级（保留数据）</h3>
+    <pre><code>docker pull louislam/uptime-kuma:1
+docker stop uptime-kuma
+docker rm uptime-kuma
+docker run -d --name uptime-kuma --restart=always \
+  -p 7001:3001 \
+  -v /opt/uptime-kuma/data:/app/data \
+  louislam/uptime-kuma:1</code></pre>
+  </div>
+
+  <div class="card">
+    <h2>三、组件与职责</h2>
+    <table>
+      <tr><th>组件</th><th>角色</th><th>说明</th></tr>
+      <tr><td><b>Uptime Kuma</b></td><td>监控中心</td><td>负责展示、调度、告警与通知分发；数据存 SQLite</td></tr>
+      <tr><td><b>uptime-monitor</b></td><td>数据库探针</td><td>Go 后端，周期探测 Oracle <code>SELECT 1 FROM DUAL</code>，经 Push API 上报</td></tr>
+      <tr><td><b>SMTP 邮箱</b></td><td>告警渠道</td><td>企业微信邮箱发信，异常/恢复时邮件通知</td></tr>
+      <tr><td><b>企业微信机器人</b></td><td>告警渠道</td><td>群机器人 Webhook 推送（需管理员权限）</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>四、监控配置</h2>
+    <h3>4.1 监控范围</h3>
+    <ul>
+      <li><b>数据库</b>：Oracle 实例可用性（Push 类型监控）</li>
+      <li><b>应用</b>：URL 地址、业务端口、主机存活</li>
+    </ul>
+
+    <h3>4.2 数据库监控（Push 类型）</h3>
+    <ol>
+      <li>登录 Uptime Kuma → <b>添加新监控</b></li>
+      <li>监控类型选择 <b>Push</b></li>
+      <li>设置心跳间隔（如 60 秒）与状态保留时长（如 10–20 分钟）</li>
+      <li>复制生成的 Push URL（含 token），填入探针配置的 <code>push.url</code>：</li>
+    </ol>
+    <pre><code>push:
+  url: "http://127.0.0.1:3001/api/push/YOUR_PUSH_TOKEN"</code></pre>
+    <p>探针按间隔自动上报，Kuma 收不到心跳即判定 <b>DOWN</b> 并触发告警。</p>
+
+    <h3>4.3 应用监控（HTTP / TCP / Ping）</h3>
+    <table>
+      <tr><th>监控类型</th><th>适用场景</th></tr>
+      <tr><td>HTTP(s)</td><td>Web 应用、URL 可达性、状态码</td></tr>
+      <tr><td>TCP 端口</td><td>应用服务端口连通性</td></tr>
+      <tr><td>Ping</td><td>主机存活</td></tr>
+    </table>
+    <p>直接添加监控并填入目标地址即可，无需额外探针。</p>
+  </div>
+
+  <div class="card">
+    <h2>五、告警通知</h2>
+    <blockquote>通知配置仅 <b>管理员账号</b> 可见；企业微信 Webhook 需管理员权限，当前采用 <b>邮箱方式</b>。</blockquote>
+
+    <h3>5.1 邮件通知（SMTP）</h3>
+    <ol>
+      <li>企业邮箱网页端 → 设置 → 收发信设置 → 开启 <b>SMTP 服务</b></li>
+      <li>设置 → 安全设置 → 生成<b>客户端专用密码</b>（授权码，仅显示一次）</li>
+      <li>Uptime Kuma → 设置 → 通知 → 添加通知 → <b>Email (SMTP)</b></li>
+    </ol>
+    <table>
+      <tr><th>字段</th><th>值</th></tr>
+      <tr><td>Hostname</td><td><code>smtp.exmail.qq.com</code></td></tr>
+      <tr><td>Port</td><td><code>465</code></td></tr>
+      <tr><td>Security</td><td><code>SSL/TLS</code></td></tr>
+      <tr><td>Username</td><td>企业邮箱完整地址</td></tr>
+      <tr><td>Password</td><td>客户端专用密码（非登录密码）</td></tr>
+      <tr><td>From Email</td><td>发信邮箱地址</td></tr>
+      <tr><td>To Email</td><td>收件人邮箱（可多个，逗号分隔）</td></tr>
+    </table>
+    <blockquote>若 465 被网络拦截，可改用 <code>587</code> + <code>STARTTLS</code>；填写后先点 <b>Test</b> 验证发信。</blockquote>
+
+    <h3>5.2 企业微信 Webhook（备选）</h3>
+    <pre><code># Webhook 地址格式
+https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY</code></pre>
+    <ul>
+      <li>Uptime Kuma 新版通知选 <b>企业微信 / WeCom</b>，填入 URL 即可</li>
+      <li>消息支持占位符：<code>{{name}}</code> <code>{{status}}</code> <code>{{msg}}</code> <code>{{time}}</code></li>
+      <li>⚠️ 群机器人限 <b>20 条 / 分钟</b></li>
+    </ul>
+
+    <h3>5.3 选择建议</h3>
+    <table>
+      <tr><th>场景</th><th>推荐</th></tr>
+      <tr><td>有管理员权限</td><td>企业微信 Webhook（群内实时触达）</td></tr>
+      <tr><td>无管理员权限</td><td>SMTP 邮箱（本方案当前采用）</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>六、验证与截图</h2>
+    <h3>6.1 监控列表（数据库 + URL）</h3>
+    <img src="images/image-20260818182542621.png" alt="监控范围">
+    <h3>6.2 监控详情</h3>
+    <img src="images/image-20260818182611808.png" alt="监控详情">
+    <h3>6.3 后台探针日志（uptime-monitor）</h3>
+    <img src="images/image-20260818165010052.png" alt="探针日志">
+    <h3>6.4 仪表盘</h3>
+    <img src="images/image-20260818182710200.png" alt="仪表盘">
+    <h3>6.5 邮箱通知配置</h3>
+    <img src="images/image-20260818175400998.png" alt="邮箱配置">
+    <h3>6.6 连通性测试</h3>
+    <img src="images/image-20260818182819803.png" alt="连通性测试">
+  </div>
+
+  <div class="card">
+    <h2>附录：常见问题 FAQ</h2>
+    <table>
+      <tr><th>现象</th><th>原因 / 处理</th></tr>
+      <tr><td>页面显示 <code>No heartbeat in the time window</code></td><td>心跳间隔与保留时长不匹配：把心跳间隔设为探针上报周期，保留时长大于间隔</td></tr>
+      <tr><td>Push 上报 404</td><td>检查 Push URL 是否带多余查询串（<code>?status=...</code>），只保留 <code>.../api/push/&lt;token&gt;</code></td></tr>
+      <tr><td><code>SP2-0667: Message file sp1&lt;lang&gt;.msb not found</code></td><td>sqlplus 缺 ORACLE_HOME：配置 <code>db.oracle_home</code> 指向 Instant Client 目录</td></tr>
+      <tr><td><code>ORA-01017: invalid username/password</code></td><td>数据库账号密码错误：核对 <code>conf/config.yaml</code> 与 systemd 的 <code>UM_DB_PASSWORD</code></td></tr>
+      <tr><td>收不到告警邮件</td><td>检查 SMTP 授权码是否正确、端口 465/587 是否放行、监控是否勾选了通知</td></tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    📄 相关文档：部署文档 ｜ 需求文档<br>
+    Uptime Kuma 监控平台 · 内部运维方案
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: {
+    primaryColor: '#eef3fb', primaryTextColor: '#1f2937',
+    lineColor: '#94a3b8', fontSize: '14px'
+  }});
+</script>
+</body>
+</html>
