@@ -1,0 +1,30 @@
+# Uptime-Monitor 配置文件示例
+# 复制为 config.yaml 并按实际环境修改。
+# 敏感配置(如密码)建议用环境变量覆盖: UM_DB_PASSWORD / UM_PUSH_URL 等。
+
+monitor:
+  interval_seconds: 60        # 执行间隔(秒), 需与 Uptime Kuma 心跳间隔一致
+  query: "SELECT 1 FROM DUAL" # 健康检查 SQL
+  query_timeout_sec: 15       # SQL 执行超时(秒)
+  driver: "sqlplus"           # 驱动: sqlplus(调用外部客户端) | godror(原生驱动)
+  retry_times: 3              # 单次检查失败重试次数
+  retry_interval_ms: 2000     # 重试间隔(毫秒)
+
+db:
+  host: "127.0.0.1"           # Oracle 数据库 IP
+  port: 1521                  # Oracle 端口
+  user: "system"              # 账号(建议只读)
+  password: ""                # 密码(建议通过 UM_DB_PASSWORD 注入)
+  service: "orclpdb1"         # Oracle 服务名 SERVICE_NAME
+  conn_timeout_sec: 10        # 连接超时(秒)
+  sqlplus_path: "sqlplus"     # sqlplus 可执行文件路径(driver=sqlplus 时使用)
+  oracle_home: "/opt/oracle/instantclient_21_12"   # ORACLE_HOME(driver=sqlplus 时设置, 解决 SP2-0667 消息文件缺失; 留空则继承运行环境)
+  instant_client_lib: ""      # Oracle Instant Client 路径(driver=godror 时使用, 如 /usr/lib/oracle/21/client64/lib)
+
+push:
+  url: "http://127.0.0.1:3001/api/push/YOUR_PUSH_TOKEN"  # Uptime Kuma Push 监控地址
+
+log:
+  file: "/var/log/uptime-monitor/uptime-monitor.log"  # 日志文件, 空表示仅 stdout
+  level: "info"            # debug | info | warn | error
+  max_size_mb: 10          # 单文件轮转上限(MB)

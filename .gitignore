@@ -1,0 +1,21 @@
+# Build output
+/dist*/
+*.exe
+*.tar.gz
+*.tgz
+*.zip
+
+# Local runtime files
+conf/config.yaml
+log/
+*.log
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

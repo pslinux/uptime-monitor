@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache: true
+
+      - name: Build multi-arch packages
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euxo pipefail
+          VER="${VERSION#v}"
+          rm -rf dist && mkdir -p dist
+          : > /tmp/dirs.txt
+          for spec in "linux amd64" "linux arm64" "linux arm"; do
+            set -- $spec
+            os="$1"; arch="$2"
+            dir="dist/uptime-monitor-${VER}-${os}-${arch}"
+            mkdir -p "$dir/bin" "$dir/conf" "$dir/docs"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath \
+              -ldflags "-s -w -X main.version=${VER}" \
+              -o "$dir/bin/uptime-monitor" .
+            cp config.yaml.example "$dir/conf/config.yaml.example"
+            cp docs/deploy.md "$dir/docs/部署文档.md"
+            cp docs/requirement.md "$dir/docs/需求文档.md"
+            cat > "$dir/uptime-monitor.service" <<EOF
+[Unit]
+Description=Uptime-Monitor (Oracle health check)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/uptime-monitor-${VER}-${os}-${arch}/bin/uptime-monitor -c /opt/uptime-monitor-${VER}-${os}-${arch}/conf/config.yaml
+Restart=always
+RestartSec=10
+Environment=UM_DB_PASSWORD=
+Environment=UM_PUSH_URL=
+
+[Install]
+WantedBy=multi-user.target
+EOF
+            echo "$dir" >> /tmp/dirs.txt
+          done
+
+      - name: Package tarballs
+        run: |
+          set -euxo pipefail
+          while IFS= read -r dir; do
+            [ -n "$dir" ] || continue
+            tar -czf "${dir}.tar.gz" -C dist "$(basename "$dir")"
+          done < /tmp/dirs.txt
+          ls -lh dist/*.tar.gz
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: uptime-monitor-release
+          path: dist/*.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tar.gz
+          generate_release_notes: true
